@@ -1,946 +1,603 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reproductor MP4 - Alto Contraste</title>
-    <style>
-        /* ESTILOS DE ALTO CONTRASTE (CSS PURO SIN DEPENDENCIAS EXTERNAS) */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-            -webkit-user-select: none;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WatchWithoutads</title>
+  <style>
+    /* RESET Y ESTILOS BASE MONOCROMÁTICOS (B&W) */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #000000;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow-x: hidden;
+    }
 
-        body {
-            background-color: #000000;
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            overflow-x: hidden;
-        }
+    /* ENCABEZADO */
+    header {
+      width: 100%;
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #000000;
+      border-bottom: 1px solid #333333;
+      z-index: 10;
+    }
+    .brand {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #ffffff;
+    }
+    .device-badge {
+      font-size: 0.85rem;
+      background: #1a1a1a;
+      border: 1px solid #444444;
+      padding: 4px 10px;
+      border-radius: 4px;
+      color: #cccccc;
+    }
 
-        /* Encabezado y Selectores */
-        header {
-            width: 100%;
-            padding: 15px 25px;
-            background-color: #050505;
-            border-bottom: 1px solid #222222;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            gap: 15px;
-            z-index: 100;
-        }
+    /* PANEL DE SELECCIÓN DE SERIES Y EPISODIOS */
+    .selector-container {
+      width: 100%;
+      max-width: 900px;
+      padding: 15px 20px;
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      background: #080808;
+      border-bottom: 1px solid #222222;
+    }
+    .dropdown-group {
+      position: relative;
+      display: inline-block;
+    }
+    .btn-dropdown {
+      background: #111111;
+      color: #ffffff;
+      border: 1px solid #444444;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-dropdown:hover, .btn-dropdown:focus {
+      background: #222222;
+      border-color: #ffffff;
+      outline: none;
+    }
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      top: 105%;
+      left: 0;
+      background: #111111;
+      border: 1px solid #444444;
+      border-radius: 6px;
+      min-width: 220px;
+      max-height: 250px;
+      overflow-y: auto;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.8);
+      z-index: 100;
+    }
+    .dropdown-menu.show {
+      display: block;
+    }
+    .dropdown-item {
+      padding: 10px 15px;
+      color: #dddddd;
+      cursor: pointer;
+      font-size: 0.9rem;
+      border-bottom: 1px solid #222222;
+      transition: background 0.15s, color 0.15s;
+    }
+    .dropdown-item:last-child {
+      border-bottom: none;
+    }
+    .dropdown-item:hover {
+      background: #ffffff;
+      color: #000000;
+    }
 
-        .brand-container {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
+    /* CONTENEDOR DEL REPRODUCTOR */
+    .player-wrapper {
+      width: 100%;
+      max-width: 950px;
+      margin: 20px auto;
+      padding: 0 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .video-box {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #000000;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #222222;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.9);
+      cursor: pointer;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background-color: #000000;
+      display: block;
+    }
 
-        .logo-text {
-            font-size: 1.25rem;
-            font-weight: 800;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            border-left: 4px solid #ffffff;
-            padding-left: 10px;
-        }
+    /* BOTÓN DE PLAY EN EL CENTRO ESTILO JK ANIME (BLANCO/NEGRO) */
+    .center-play-btn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80px;
+      height: 80px;
+      background-color: #ffffff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+      z-index: 5;
+      transition: transform 0.2s, opacity 0.3s;
+      pointer-events: auto;
+    }
+    .center-play-btn:hover {
+      transform: translate(-50%, -50%) scale(1.08);
+      background-color: #eeeeee;
+    }
+    /* Icono del triángulo blanco dentro o negro en contraste */
+    .play-icon-shape {
+      width: 0;
+      height: 0;
+      border-top: 14px solid transparent;
+      border-bottom: 14px solid transparent;
+      border-left: 22px solid #000000;
+      margin-left: 5px;
+    }
 
-        .select-wrapper {
-            position: relative;
-            display: inline-block;
-        }
+    /* BARRA DE CONTROLES INFERIOR */
+    .controls-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(0deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 70%, transparent 100%);
+      padding: 15px 20px 12px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 6;
+      transition: opacity 0.3s ease;
+      opacity: 1;
+    }
+    .controls-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
 
-        .custom-button {
-            background-color: #111111;
-            color: #ffffff;
-            border: 1px solid #333333;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-        }
+    /* BARRA DE PROGRESO DE VIDEO INTERACTIVA */
+    .progress-bar-wrapper {
+      width: 100%;
+      height: 10px;
+      background: #333333;
+      border-radius: 5px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background-color: #ffffff;
+      border-radius: 5px;
+      transition: width 0.1s linear;
+    }
 
-        .custom-button:hover, .custom-button:focus {
-            border-color: #ffffff;
-            background-color: #1c1c1c;
-            outline: none;
-        }
+    /* CONTROLES ABAJO (PLAY PEQUEÑO, TIEMPO, PANTALLA COMPLETA) */
+    .bottom-controls-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .left-controls {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .mini-btn {
+      background: none;
+      border: none;
+      color: #ffffff;
+      cursor: pointer;
+      font-size: 1.2rem;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .mini-btn:hover {
+      opacity: 0.8;
+    }
+    .time-display {
+      font-size: 0.85rem;
+      font-family: monospace;
+      color: #cccccc;
+    }
 
-        .custom-button svg {
-            width: 14px;
-            height: 14px;
-            fill: currentColor;
-        }
+    /* MENSAJE DE ESTADO */
+    .status-info {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: #777777;
+    }
+  </style>
+</head>
+<body>
 
-        .dropdown-menu {
-            display: none;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            margin-top: 6px;
-            min-width: 240px;
-            max-height: 280px;
-            overflow-y: auto;
-            background-color: #0a0a0a;
-            border: 1px solid #333333;
-            border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
-            z-index: 200;
-        }
+  <!-- ENCABEZADO -->
+  <header>
+    <div class="brand">WatchWithoutads</div>
+    <div class="device-badge" id="deviceBadge">Detectando dispositivo...</div>
+  </header>
 
-        .dropdown-menu.active {
-            display: block;
-        }
+  <!-- SELECTOR DE SERIES Y EPISODIOS -->
+  <div class="selector-container">
+    <!-- Dropdown Serie -->
+    <div class="dropdown-group">
+      <button class="btn-dropdown" id="btnSeries">
+        <span id="labelSerie">Cargando series...</span> ▼
+      </button>
+      <div class="dropdown-menu" id="menuSeries"></div>
+    </div>
 
-        .dropdown-item {
-            width: 100%;
-            padding: 10px 16px;
-            background: none;
-            border: none;
-            color: #aaaaaa;
-            text-align: left;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: background 0.15s, color 0.15s;
-        }
+    <!-- Dropdown Episodio -->
+    <div class="dropdown-group">
+      <button class="btn-dropdown" id="btnEpisodes">
+        <span id="labelEpisode">Selecciona episodios...</span> ▼
+      </button>
+      <div class="dropdown-menu" id="menuEpisodes"></div>
+    </div>
+  </div>
 
-        .dropdown-item:hover {
-            background-color: #222222;
-            color: #ffffff;
-        }
+  <!-- REPRODUCTOR MP4 -->
+  <div class="player-wrapper">
+    <div class="video-box" id="videoBox">
+      <!-- Video HTML5 sin controles nativos para usar los personalizados -->
+      <video id="mainVideo" preload="metadata"></video>
 
-        .dropdown-item.selected {
-            color: #ffffff;
-            font-weight: bold;
-            background-color: #1a1a1a;
-        }
+      <!-- Botón Central Blanco/Negro (Estilo JK Anime) -->
+      <div class="center-play-btn" id="centerPlayBtn">
+        <div class="play-icon-shape" id="centerIcon"></div>
+      </div>
 
-        .device-badge {
-            font-family: monospace;
-            font-size: 0.75rem;
-            background-color: #111111;
-            border: 1px solid #222222;
-            padding: 6px 12px;
-            border-radius: 20px;
-            color: #cccccc;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+      <!-- Barra de controles personalizada -->
+      <div class="controls-overlay" id="controlsOverlay">
+        <!-- Barra de tiempo que responde al clic/toque -->
+        <div class="progress-bar-wrapper" id="progressWrapper">
+          <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
 
-        .badge-dot {
-            width: 8px;
-            height: 8px;
-            background-color: #ffffff;
-            border-radius: 50%;
-        }
+        <div class="bottom-controls-row">
+          <div class="left-controls">
+            <button class="mini-btn" id="miniPlayBtn">▶</button>
+            <span class="time-display" id="timeDisplay">00:00 / 00:00</span>
+          </div>
+          <div class="right-controls">
+            <button class="mini-btn" id="fullscreenBtn" title="Pantalla Completa">⛶</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="status-info" id="statusInfo">Conectando a GitHub Repository...</div>
+  </div>
 
-        /* Contenedor Principal del Reproductor */
-        main {
-            flex-grow: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
+  <script>
+    // CONFIGURACIÓN DE REPOSiTORIO GITHUB
+    const GITHUB_USER = "Akirosaybye";
+    const GITHUB_REPO = "WatchWithoutads";
 
-        .player-container {
-            position: relative;
-            width: 100%;
-            max-width: 960px;
-            aspect-ratio: 16 / 9;
-            background-color: #000000;
-            border: 1px solid #222222;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+    // ESTADO DE LA APLICACIÓN
+    let catalog = [];
+    let currentSerieIndex = 0;
+    let currentEpisodeIndex = 0;
+    let hideTimer = null;
 
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            background-color: #000000;
-        }
+    // ELEMENTOS DOM
+    const video = document.getElementById('mainVideo');
+    const videoBox = document.getElementById('videoBox');
+    const centerPlayBtn = document.getElementById('centerPlayBtn');
+    const centerIcon = document.getElementById('centerIcon');
+    const miniPlayBtn = document.getElementById('miniPlayBtn');
+    const controlsOverlay = document.getElementById('controlsOverlay');
+    const progressWrapper = document.getElementById('progressWrapper');
+    const progressFill = document.getElementById('progressFill');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const deviceBadge = document.getElementById('deviceBadge');
+    const statusInfo = document.getElementById('statusInfo');
 
-        /* Botón Central Estilo JK Anime (Blanco y Negro) */
-        .center-play-btn {
-            position: absolute;
-            z-index: 30;
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background-color: #ffffff;
-            color: #000000;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 30px rgba(255,255,255,0.3);
-            transition: opacity 0.3s ease, transform 0.2s ease;
-            opacity: 0;
-            pointer-events: none;
-        }
+    const btnSeries = document.getElementById('btnSeries');
+    const menuSeries = document.getElementById('menuSeries');
+    const labelSerie = document.getElementById('labelSerie');
 
-        .center-play-btn.visible {
-            opacity: 1;
-            pointer-events: auto;
-        }
+    const btnEpisodes = document.getElementById('btnEpisodes');
+    const menuEpisodes = document.getElementById('menuEpisodes');
+    const labelEpisode = document.getElementById('labelEpisode');
 
-        .center-play-btn:hover {
-            transform: scale(1.08);
+    // 1. DETECTOR DE DISPOSITIVOS (Móvil, TV, PC/Laptop de respaldo)
+    function detectDevice() {
+      try {
+        const ua = navigator.userAgent.toLowerCase();
+        if (/smart-tv|smarttv|googletv|appletv|hbbtv|pov_tv|netcast|webos/.test(ua)) {
+          return "Smart TV";
         }
-
-        .center-play-btn svg {
-            width: 36px;
-            height: 36px;
-            fill: currentColor;
-            margin-left: 3px;
+        if (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/.test(ua)) {
+          return "Móvil / Tablet";
         }
+        return "PC / Laptop";
+      } catch (e) {
+        return "PC / Laptop"; // Interfaz por defecto ante cualquier falla
+      }
+    }
 
-        /* Controles Inferiores */
-        .controls-overlay {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.95), rgba(0,0,0,0.4), transparent);
-            padding: 15px 20px 12px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 40;
-            transition: opacity 0.3s ease;
-            opacity: 0;
-            pointer-events: none;
-        }
+    // 2. ESCÁNER AUTOMÁTICO DE ARCHIVOS EN GITHUB (Carpetas = Series, MP4 = Capítulos)
+    async function fetchGitHubCatalog() {
+      try {
+        const response = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents`);
+        if (!response.ok) throw new Error("Respuesta no OK de GitHub API");
+        const rootItems = await response.json();
 
-        .controls-overlay.visible {
-            opacity: 1;
-            pointer-events: auto;
-        }
+        // Filtra únicamente las carpetas del repositorio para tomarlas como series
+        const folders = rootItems.filter(item => item.type === "dir");
+        let loadedCatalog = [];
 
-        /* Barra de Progreso Interactivas */
-        .progress-container {
-            width: 100%;
-            height: 8px;
-            background-color: rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-            cursor: pointer;
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background-color: #ffffff;
-            border-radius: 4px;
-            width: 0%;
-            position: relative;
-        }
-
-        .progress-thumb {
-            position: absolute;
-            right: -6px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 14px;
-            height: 14px;
-            background-color: #ffffff;
-            border-radius: 50%;
-            box-shadow: 0 0 6px rgba(0,0,0,0.5);
-        }
-
-        /* Botones e información de tiempo */
-        .controls-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .controls-left {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .icon-btn {
-            background: none;
-            border: none;
-            color: #ffffff;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 4px;
-            transition: opacity 0.2s;
-        }
-
-        .icon-btn:hover {
-            opacity: 0.7;
-        }
-
-        .icon-btn svg {
-            width: 24px;
-        <header class="flex items-center justify-between border-b border-zinc-800 pb-4">
-            <div class="flex items-center space-x-3">
-                <div class="w-8 h-8 rounded bg-white text-black font-extrabold flex items-center justify-center text-xl tracking-tighter">
-                    W
-                </div>
-                <div>
-                    <!-- Updated header title -->
-                    <h1 class="text-xl font-bold tracking-tight text-white">WatchWithoutads</h1>
-                    <p class="text-xs text-zinc-400">Reproductor Minimalista en Blanco y Negro</p>
-                </div>
-            </div>
+        for (const folder of folders) {
+          const folderRes = await fetch(folder.url);
+          if (folderRes.ok) {
+            const files = await folderRes.json();
+            // Filtra solo los archivos .mp4
+            const mp4Files = files.filter(f => f.name.toLowerCase().endsWith('.mp4'));
             
-            <div class="flex items-center space-x-2 bg-zinc-900 border border-zinc-800 rounded-full px-3 py-1.5 text-xs text-zinc-300">
-                <i class="fas fa-tv text-zinc-400" id="device-icon"></i>
-                <span id="device-type-label">Detectando dispositivo...</span>
-            </div>
-        </header>
+            if (mp4Files.length > 0) {
+              loadedCatalog.push({
+                name: folder.name,
+                episodes: mp4Files.map(file => ({
+                  title: file.name,
+                  url: file.download_url
+                }))
+              });
+            }
+          }
+        }
 
-        <!-- Selector Controls -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Series Selector -->
-            <div class="relative">
-                <label class="block text-xs font-medium text-zinc-400 mb-1 tracking-wider uppercase">Serie</label>
-                <div id="series-select-btn" tabindex="0" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 flex items-center justify-between cursor-pointer hover:border-zinc-700 transition focus:outline-none focus:border-white">
-                    <span id="series-selected-text" class="text-sm font-medium truncate">Cargando series desde GitHub...</span>
-                    <i class="fas font-thin fa-chevron-down text-xs text-zinc-400"></i>
-                </div>
-                <div id="series-dropdown" class="custom-dropdown absolute left-0 right-0 top-full mt-2 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-50 p-1.5 hidden max-h-60 overflow-y-auto">
-                    <!-- Dynamic Series Options from GitHub API -->
-                </div>
-            </div>
+        if (loadedCatalog.length > 0) {
+          catalog = loadedCatalog;
+          statusInfo.innerText = "Catálogo escaneado exitosamente desde GitHub.";
+        } else {
+          useFallbackCatalog("No se encontraron carpetas con videos .mp4 en GitHub.");
+        }
+      } catch (err) {
+        useFallbackCatalog("Usando estructura de catálogo por defecto.");
+      }
+      renderDropdowns();
+      loadCurrentEpisode();
+    }
 
-            <!-- Episode Selector -->
-            <div class="relative">
-                <label class="block text-xs font-medium text-zinc-400 mb-1 tracking-wider uppercase">Capítulo</label>
-                <div id="episode-select-btn" tabindex="0" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 flex items-center justify-between cursor-pointer hover:border-zinc-700 transition focus:outline-none focus:border-white">
-                    <span id="episode-selected-text" class="text-sm font-medium truncate">Selecciona una serie primero</span>
-                    <i class="fas font-thin fa-chevron-down text-xs text-zinc-400"></i>
-                </div>
-                <div id="episode-dropdown" class="custom-dropdown absolute left-0 right-0 top-full mt-2 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-50 p-1.5 hidden max-h-60 overflow-y-auto">
-                    <!-- Dynamic Episode Options from GitHub API -->
-                </div>
-            </div>
-        </div>
+    // Catálogo de respaldo directo para evitar cualquier fallo
+    function useFallbackCatalog(msg) {
+      statusInfo.innerText = msg;
+      catalog = [
+        {
+          name: "Clannad: After Story test",
+          episodes: [
+            {
+              title: "Clannad t2c5.mp4",
+              url: "./clannad/clannadt2c5.mp4"
+            }
+          ]
+        }
+      ];
+    }
 
-        <div class="device-badge">
-            <div class="badge-dot"></div>
-            Dispositivo: <span id="deviceIndicator">Detectando...</span>
-        </div>
-    </header>
+    // 3. RENDERIZADO DE MENÚS DESPLEGABLES DE SERIES Y EPISODIOS
+    function renderDropdowns() {
+      if (!catalog.length) return;
 
-    <!-- Área del Reproductor Central -->
-    <main>
-        <div id="playerContainer" class="player-container">
-            
-            <!-- Elemento de Video MP4 -->
-            <video id="mainVideo" playsinline></video>
-
-            <!-- Botón de Reproducción Central (Blanco y Negro) -->
-            <button id="centerPlayBtn" class="center-play-btn" aria-label="Reproducir o Pausar">
-                <svg id="centerPlayIcon" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"/>
-                </svg>
-            </button>
-
-            <!-- Overlay de Controles Inferiores -->
-            <div id="controlsOverlay" class="controls-overlay">
-                <!-- Seeker / Barra de Progreso -->
-                <div id="progressContainer" class="progress-container">
-                    <div id="progressBar" class="progress-bar">
-                        <div class="progress-thumb"></div>
-                    </div>
-                </div>
-
-                <!-- Botones y Tiempo -->
-                <div class="controls-row">
-                    <div class="controls-left">
-                        <button id="bottomPlayBtn" class="icon-btn" aria-label="Play/Pausa">
-                            <svg id="bottomPlayIcon" viewBox="0 0 24 24">
-                                <path d="M8 5v14l11-7z"/>
-                            </svg>
-                        </button>
-                        <div id="timeDisplay" class="time-text">0:00 / 0:00</div>
-                    </div>
-
-                    <div class="controls-right">
-                        <button id="fullscreenBtn" class="icon-btn" aria-label="Pantalla Completa">
-                            <svg viewBox="0 0 24 24">
-                                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </main>
-
-    <footer>
-        Reproductor MP4 de Alto Contraste para GitHub Pages — Detección Automática de Contenido
-    </footer>
-
-    <script>
-        // State Management
-        const state = {
-            catalog: [], // Dynamically populated from GitHub API
-            currentSeriesIndex: 0,
-            currentEpisodeIndex: 0,
-            controlsTimeout: null,
-            isControlsVisible: true,
-            isSeeking: false,
-            deviceType: 'PC/Laptop'
+      // Renderizar Series
+      menuSeries.innerHTML = "";
+      catalog.forEach((serie, idx) => {
+        const item = document.createElement('div');
+        item.className = "dropdown-item";
+        item.innerText = serie.name;
+        item.onclick = (e) => {
+          e.stopPropagation();
+          currentSerieIndex = idx;
+          currentEpisodeIndex = 0;
+          menuSeries.classList.remove('show');
+          renderDropdowns();
+          loadCurrentEpisode();
         };
-
-        // GitHub Repository Config
-        const GITHUB_REPO_OWNER = 'Akirosaybye';
-        const GITHUB_REPO_NAME = 'WatchWithoutads';
-        const GITHUB_API_BASE = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents`;
-
-        // DOM Elements
-        const playerContainer = document.getElementById('player-container');
-        const videoElement = document.getElementById('video-player');
-        const overlayPlayBtn = document.getElementById('overlay-play-btn');
-        const customControls = document.getElementById('custom-controls');
-        
-        const playPauseBtn = document.getElementById('play-pause-btn');
-        const prevEpBtn = document.getElementById('prev-ep');
-        const nextEpBtn = document.getElementById('next-ep');
-        const fullscreenBtn = document.getElementById('fullscreen-btn');
-        
-        const progressBar = document.getElementById('progress-bar');
-        const progressFilled = document.getElementById('progress-filled');
-        const currentTimeEl = document.getElementById('current-time');
-        const durationEl = document.getElementById('duration');
-        
-        const seriesSelectBtn = document.getElementById('series-select-btn');
-        const seriesSelectedText = document.getElementById('series-selected-text');
-        const seriesDropdown = document.getElementById('series-dropdown');
-        
-        const episodeSelectBtn = document.getElementById('episode-select-btn');
-        const episodeSelectedText = document.getElementById('episode-selected-text');
-        const episodeDropdown = document.getElementById('episode-dropdown');
-
-        const deviceIcon = document.getElementById('device-icon');
-        const deviceTypeLabel = document.getElementById('device-type-label');
-
-        // Fetch dynamic series and episode files from GitHub API
-        async function fetchGitHubCatalog() {
-            seriesSelectedText.textContent = 'Buscando series en GitHub...';
-            episodeSelectedText.textContent = 'Esperando serie...';
-            
-            try {
-                const response = await fetch(GITHUB_API_BASE);
-                if (!response.ok) {
-                    throw new Error(`GitHub API error: ${response.status}`);
-                }
-                const items = await response.json();
-                
-                // Filter folders/directories as Series
-                const folders = items.filter(item => item.type === 'dir');
-                
-                if (folders.length === 0) {
-                    seriesSelectedText.textContent = 'No se encontraron carpetas';
-                    return;
-                }
-
-                // Process folders into series catalog entries
-                state.catalog = folders.map(folder => ({
-                    title: folder.name,
-                    path: folder.path,
-                    episodes: [],
-                    isLoaded: false
-                }));
-
-                renderSeriesDropdown();
-
-                // Select first series by default
-                await selectSeries(0);
-
-            } catch (error) {
-                console.error('Error fetching catalog from GitHub:', error);
-                seriesSelectedText.textContent = 'Error al cargar catálogo';
-                episodeSelectedText.textContent = 'Verifica conexión o repositiorio';
-            }
-        }
-
-        // Fetch episodes for a specific series folder
-        async function fetchEpisodesForSeries(seriesIndex) {
-            const series = state.catalog[seriesIndex];
-            if (!series) return;
-
-            if (series.isLoaded) return; // Cached
-
-            episodeSelectedText.textContent = 'Cargando capítulos...';
-            episodeDropdown.innerHTML = `<div class="p-3 text-center text-xs text-zinc-500">Buscando archivos .mp4...</div>`;
-
-            try {
-                const url = `${GITHUB_API_BASE}/${encodeURIComponent(series.path)}`;
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`GitHub API error: ${response.status}`);
-                }
-                const items = await response.json();
-
-                // Filter .mp4 files
-                const mp4Files = items.filter(item => item.type === 'file' && item.name.toLowerCase().endsWith('.mp4'));
-
-                series.episodes = mp4Files.map(file => {
-                    // Prettify title (remove .mp4 extension)
-                    const cleanTitle = file.name.replace(/\.mp4$/i, '');
-                    return {
-                        title: cleanTitle,
-                        url: file.download_url || `https://raw.githubusercontent.com/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/main/${encodeURIComponent(series.path)}/${encodeURIComponent(file.name)}`
-                    };
-                });
-
-                series.isLoaded = true;
-            } catch (error) {
-                console.error(`Error fetching episodes for ${series.title}:`, error);
-                series.episodes = [];
-                series.isLoaded = true;
-            }
-        }
-
-        async function selectSeries(index) {
-            if (!state.catalog[index]) return;
-
-            state.currentSeriesIndex = index;
-            state.currentEpisodeIndex = 0;
-            const series = state.catalog[index];
-
-            seriesSelectedText.textContent = series.title;
-
-            // Render updated series checkmark
-            renderSeriesDropdown();
-
-            // Load episodes dynamically
-            await fetchEpisodesForSeries(index);
-
-            // Render Episode dropdown list
-            renderEpisodeDropdown();
-
-            if (series.episodes.length > 0) {
-                loadEpisode(0);
-            } else {
-                episodeSelectedText.textContent = 'Sin episodios (.mp4)';
-                videoElement.src = '';
-                currentTimeEl.textContent = '00:00';
-                durationEl.textContent = '00:00';
-            }
-        }
-
-        function loadEpisode(epIndex) {
-            const series = state.catalog[state.currentSeriesIndex];
-            if (!series || !series.episodes || series.episodes.length === 0) return;
-
-            if (epIndex < 0 || epIndex >= series.episodes.length) return;
-
-            state.currentEpisodeIndex = epIndex;
-            const episode = series.episodes[epIndex];
-
-            episodeSelectedText.textContent = episode.title;
-            renderEpisodeDropdown();
-
-            videoElement.src = episode.url;
-            videoElement.load();
-            
-            // Auto play attempt
-            videoElement.play().then(() => {
-                updatePlayStateUI(true);
-            }).catch(() => {
-                updatePlayStateUI(false);
-            });
-
-            updateNavButtonsState();
-        }
-
-        // Render Series Dropdown
-        function renderSeriesDropdown() {
-            seriesDropdown.innerHTML = '';
-            state.catalog.forEach((series, idx) => {
-                const item = document.createElement('div');
-                item.tabIndex = 0;
-                item.className = `dropdown-option flex items-center justify-between p-3 rounded-lg text-sm cursor-pointer transition ${idx === state.currentSeriesIndex ? 'bg-zinc-800 text-white font-medium' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'}`;
-                
-                item.innerHTML = `
-                    <span class="truncate">${series.title}</span>
-                    ${idx === state.currentSeriesIndex ? '<i class="fas fa-check text-xs text-white"></i>' : ''}
-                `;
-
-                item.addEventListener('click', () => {
-                    selectSeries(idx);
-                    seriesDropdown.classList.add('hidden');
-                });
-
-                item.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        selectSeries(idx);
-                        seriesDropdown.classList.add('hidden');
-                    }
-                });
-
-                seriesDropdown.appendChild(item);
-            });
-        }
-
-        // Render Episode Dropdown
-        function renderEpisodeDropdown() {
-            episodeDropdown.innerHTML = '';
-            const series = state.catalog[state.currentSeriesIndex];
-
-            if (!series || !series.episodes || series.episodes.length === 0) {
-                episodeDropdown.innerHTML = `<div class="p-3 text-center text-xs text-zinc-500">No hay archivos .mp4 en esta carpeta</div>`;
-                return;
-            }
-
-            series.episodes.forEach((ep, idx) => {
-                const item = document.createElement('div');
-                item.tabIndex = 0;
-                item.className = `dropdown-option flex items-center justify-between p-3 rounded-lg text-sm cursor-pointer transition ${idx === state.currentEpisodeIndex ? 'bg-zinc-800 text-white font-medium' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'}`;
-                
-                item.innerHTML = `
-                    <span class="truncate">${ep.title}</span>
-                    ${idx === state.currentEpisodeIndex ? '<i class="fas fa-check text-xs text-white"></i>' : ''}
-                `;
-
-                item.addEventListener('click', () => {
-                    loadEpisode(idx);
-                    episodeDropdown.classList.add('hidden');
-                });
-
-                item.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        loadEpisode(idx);
-                        episodeDropdown.classList.add('hidden');
-                    }
-                });
-
-                episodeDropdown.appendChild(item);
-            });
-        }
-
-        // Device Detection Logic
-        function detectDevice() {
-            const ua = navigator.userAgent;
-            let type = 'PC/Laptop';
-            let iconClass = 'fa-desktop';
-
-            if (/TV|SmartTV|HbbTV|NetCast|NETTV|AppleTV|BOX|SmartHub|DLNA|GoogleTV|Chromecast/i.test(ua)) {
-                type = 'Smart TV';
-                iconClass = 'fa-tv';
-            } else if (/Tablet|iPad|PlayBook|Silk/i.test(ua) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /Macintosh/i.test(ua))) {
-                type = 'Tablet';
-                iconClass = 'fa-tablet-alt';
-            } else if (/Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
-                type = 'Mobile';
-                iconClass = 'fa-mobile-alt';
-            }
-
-            state.deviceType = type;
-            deviceTypeLabel.textContent = type;
-            deviceIcon.className = `fas ${iconClass} text-zinc-400`;
-        }
-
-        // Custom Dropdown Toggles
-        seriesSelectBtn.addEventListener('click', () => {
-            seriesDropdown.classList.toggle('hidden');
-            episodeDropdown.classList.add('hidden');
-        });
-
-        episodeSelectBtn.addEventListener('click', () => {
-            episodeDropdown.classList.toggle('hidden');
-            seriesDropdown.classList.add('hidden');
-        });
-
-        // Close dropdowns on click outside
-        document.addEventListener('click', (e) => {
-            if (!seriesSelectBtn.contains(e.target) && !seriesDropdown.contains(e.target)) {
-                seriesDropdown.classList.add('hidden');
-            }
-            if (!episodeSelectBtn.contains(e.target) && !episodeDropdown.contains(e.target)) {
-                episodeDropdown.classList.add('hidden');
-            }
-        });
-
-        // Player UI and Interactivity Controls
-        function togglePlayPause() {
-            if (!videoElement.src) return;
-
-            if (videoElement.paused || videoElement.ended) {
-                videoElement.play();
-                updatePlayStateUI(true);
-            } else {
-                videoElement.pause();
-                updatePlayStateUI(false);
-            }
-        }
-
-        function updatePlayStateUI(isPlaying) {
-            if (isPlaying) {
-                playPauseBtn.innerHTML = '<i class="fas fa-pause text-base"></i>';
-                overlayPlayBtn.innerHTML = '<i class="fas fa-pause text-xl text-black ml-0"></i>';
-                showControlsTemporarily();
-            } else {
-                playPauseBtn.innerHTML = '<i class="fas fa-play text-base ml-0.5"></i>';
-                overlayPlayBtn.innerHTML = '<i class="fas fa-play text-xl text-black ml-1"></i>';
-                showControlsPermanent();
-            }
-        }
-
-        function showControlsTemporarily() {
-            customControls.classList.remove('opacity-0', 'pointer-events-none');
-            overlayPlayBtn.classList.remove('opacity-0', 'pointer-events-none');
-            state.isControlsVisible = true;
-
-            clearTimeout(state.controlsTimeout);
-            if (!videoElement.paused) {
-                state.controlsTimeout = setTimeout(() => {
-                    customControls.classList.add('opacity-0', 'pointer-events-none');
-                    overlayPlayBtn.classList.add('opacity-0', 'pointer-events-none');
-                    state.isControlsVisible = false;
-                }, 3000);
-            }
-        }
-
-        function showControlsPermanent() {
-            clearTimeout(state.controlsTimeout);
-            customControls.classList.remove('opacity-0', 'pointer-events-none');
-            overlayPlayBtn.classList.remove('opacity-0', 'pointer-events-none');
-            state.isControlsVisible = true;
-        }
-
-        // Interaction Listeners for Auto-Hiding Controls
-        playerContainer.addEventListener('mousemove', showControlsTemporarily);
-        playerContainer.addEventListener('touchstart', showControlsTemporarily, { passive: true });
-        playerContainer.addEventListener('click', (e) => {
-            if (e.target === videoElement || e.target === playerContainer || e.target.id === 'overlay-play-btn') {
-                togglePlayPause();
-            } else {
-                showControlsTemporarily();
-            }
-        });
-
-        // Time Format Helper (HH:MM:SS or MM:SS)
-        function formatTime(seconds) {
-            if (isNaN(seconds) || seconds === Infinity) return '00:00';
-            const h = Math.floor(seconds / 3600);
-            const m = Math.floor((seconds % 3600) / 60);
-            const s = Math.floor(seconds % 60);
-
-            if (h > 0) {
-                return `${h}:${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
-            }
-            return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
-        }
-
-        // Video Progress and Time Updates
-        videoElement.addEventListener('timeupdate', () => {
-            if (!state.isSeeking && videoElement.duration) {
-                const percentage = (videoElement.currentTime / videoElement.duration) * 100;
-                progressFilled.style.width = `${percentage}%`;
-                currentTimeEl.textContent = formatTime(videoElement.currentTime);
-            }
-        });
-
-        videoElement.addEventListener('loadedmetadata', () => {
-            durationEl.textContent = formatTime(videoElement.duration);
-        });
-
-        videoElement.addEventListener('ended', () => {
-            updatePlayStateUI(false);
-            const series = state.catalog[state.currentSeriesIndex];
-            if (series && series.episodes && state.currentEpisodeIndex < series.episodes.length - 1) {
-                loadEpisode(state.currentEpisodeIndex + 1);
-            }
-        });
-
-        // Progress Bar Click and Touch Seeking
-        function seek(event) {
-            if (!videoElement.duration) return;
-            const rect = progressBar.getBoundingClientRect();
-            const clientX = event.touches ? event.touches[0].clientX : event.clientX;
-            const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-            
-            progressFilled.style.width = `${pos * 100}%`;
-            videoElement.currentTime = pos * videoElement.duration;
-            currentTimeEl.textContent = formatTime(videoElement.currentTime);
-        }
-
-        let isDraggingProgress = false;
-
-        progressBar.addEventListener('mousedown', (e) => {
-            isDraggingProgress = true;
-            state.isSeeking = true;
-            seek(e);
-        });
-
-        window.addEventListener('mousemove', (e) => {
-            if (isDraggingProgress) {
-                seek(e);
-            }
-        });
-
-        window.addEventListener('mouseup', () => {
-            if (isDraggingProgress) {
-                isDraggingProgress = false;
-                state.isSeeking = false;
-            }
-        });
-
-        progressBar.addEventListener('touchstart', (e) => {
-            isDraggingProgress = true;
-            state.isSeeking = true;
-            seek(e);
-        }, { passive: true });
-
-        window.addEventListener('touchmove', (e) => {
-            if (isDraggingProgress) {
-                seek(e);
-            }
-        }, { passive: true });
-
-        window.addEventListener('touchend', () => {
-            if (isDraggingProgress) {
-                isDraggingProgress = false;
-                state.isSeeking = false;
-            }
-        });
-
-        // Next / Prev Episode Navigation
-        function updateNavButtonsState() {
-            const series = state.catalog[state.currentSeriesIndex];
-            if (!series || !series.episodes || series.episodes.length === 0) {
-                prevEpBtn.disabled = true;
-                nextEpBtn.disabled = true;
-                prevEpBtn.classList.add('opacity-30', 'cursor-not-allowed');
-                nextEpBtn.classList.add('opacity-30', 'cursor-not-allowed');
-                return;
-            }
-
-            const epCount = series.episodes.length;
-            
-            prevEpBtn.disabled = state.currentEpisodeIndex <= 0;
-            prevEpBtn.classList.toggle('opacity-30', state.currentEpisodeIndex <= 0);
-            prevEpBtn.classList.toggle('cursor-not-allowed', state.currentEpisodeIndex <= 0);
-
-            nextEpBtn.disabled = state.currentEpisodeIndex >= epCount - 1;
-            nextEpBtn.classList.toggle('opacity-30', state.currentEpisodeIndex >= epCount - 1);
-            nextEpBtn.classList.toggle('cursor-not-allowed', state.currentEpisodeIndex >= epCount - 1);
-        }
-
-        prevEpBtn.addEventListener('click', () => {
-            if (state.currentEpisodeIndex > 0) {
-                loadEpisode(state.currentEpisodeIndex - 1);
-            }
-        });
-
-        nextEpBtn.addEventListener('click', () => {
-            const series = state.catalog[state.currentSeriesIndex];
-            if (series && series.episodes && state.currentEpisodeIndex < series.episodes.length - 1) {
-                loadEpisode(state.currentEpisodeIndex + 1);
-            }
-        });
-
-        // Toggle Fullscreen logic
-        function toggleFullscreen() {
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                if (playerContainer.requestFullscreen) {
-                    playerContainer.requestFullscreen();
-                } else if (playerContainer.webkitRequestFullscreen) {
-                    playerContainer.webkitRequestFullscreen();
-                }
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                }
-            }
-        }
-
-        fullscreenBtn.addEventListener('click', toggleFullscreen);
-
-        document.addEventListener('fullscreenchange', updateFullscreenIcon);
-        document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
-
-        function updateFullscreenIcon() {
-            const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
-            fullscreenBtn.innerHTML = isFull 
-                ? '<i class="fas fa-compress text-base"></i>' 
-                : '<i class="fas fa-expand text-base"></i>';
-        }
-
-        // Smart TV and Keyboard Remote Control Handling
-        window.addEventListener('keydown', (e) => {
-            switch (e.key) {
-                case ' ':
-                case 'k':
-                case 'MediaPlayPause':
-                    e.preventDefault();
-                    togglePlayPause();
-                    break;
-                case 'ArrowRight':
-                    if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
-                        e.preventDefault();
-                        videoElement.currentTime = Math.min(videoElement.duration, videoElement.currentTime + 5);
-                        showControlsTemporarily();
-                    }
-                    break;
-                case 'ArrowLeft':
-                    if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
-                        e.preventDefault();
-                        videoElement.currentTime = Math.max(0, videoElement.currentTime - 5);
-                        showControlsTemporarily();
-                    }
-                    break;
-                case 'f':
-                    e.preventDefault();
-                    toggleFullscreen();
-                    break;
-                case 'Back':
-                case 'BrowserBack':
-                case 'Escape':
-                    // If in fullscreen, escape fullscreen naturally or catch custom back button
-                    if (document.fullscreenElement || document.webkitFullscreenElement) {
-                        e.preventDefault();
-                        toggleFullscreen();
-                    }
-                    break;
-            }
-        });
-
-        // Initialize on Window Load
-        window.onload = function() {
-            detectDevice();
-            fetchGitHubCatalog();
+        menuSeries.appendChild(item);
+      });
+
+      labelSerie.innerText = catalog[currentSerieIndex].name;
+
+      // Renderizar Episodios de la Serie Seleccionada
+      menuEpisodes.innerHTML = "";
+      const episodes = catalog[currentSerieIndex].episodes;
+      episodes.forEach((ep, idx) => {
+        const item = document.createElement('div');
+        item.className = "dropdown-item";
+        item.innerText = ep.title;
+        item.onclick = (e) => {
+          e.stopPropagation();
+          currentEpisodeIndex = idx;
+          menuEpisodes.classList.remove('show');
+          renderDropdowns();
+          loadCurrentEpisode();
         };
-    </script>
+        menuEpisodes.appendChild(item);
+      });
+
+      labelEpisode.innerText = episodes[currentEpisodeIndex] ? episodes[currentEpisodeIndex].title : "Sin episodios";
+    }
+
+    // Cargar el episodio en el reproductor MP4
+    function loadCurrentEpisode() {
+      const ep = catalog[currentSerieIndex]?.episodes[currentEpisodeIndex];
+      if (ep) {
+        video.src = ep.url;
+        video.load();
+        updatePlayStateUI(false);
+      }
+    }
+
+    // 4. CONTROL DE REPRODUCCIÓN Y EVENTOS
+    function togglePlay() {
+      if (video.paused) {
+        video.play();
+        updatePlayStateUI(true);
+      } else {
+        video.pause();
+        updatePlayStateUI(false);
+      }
+    }
+
+    function updatePlayStateUI(isPlaying) {
+      if (isPlaying) {
+        centerPlayBtn.style.opacity = '0';
+        centerPlayBtn.style.pointerEvents = 'none';
+        miniPlayBtn.innerText = '❚❚';
+      } else {
+        centerPlayBtn.style.opacity = '1';
+        centerPlayBtn.style.pointerEvents = 'auto';
+        miniPlayBtn.innerText = '▶';
+      }
+    }
+
+    // Actualizar la barra de progreso y el tiempo (Formato HH:MM:SS)
+    function formatTime(sec) {
+      if (isNaN(sec)) return "00:00";
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = Math.floor(sec % 60);
+      const pM = String(m).padStart(2, '0');
+      const pS = String(s).padStart(2, '0');
+      return h > 0 ? `${h}:${pM}:${pS}` : `${pM}:${pS}`;
+    }
+
+    video.ontimeupdate = () => {
+      if (video.duration) {
+        const pct = (video.currentTime / video.duration) * 100;
+        progressFill.style.width = `${pct}%`;
+        timeDisplay.innerText = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
+      }
+    };
+
+    // Barra de tiempo interactiva: lleva exacto al minuto, segundo y hora al presionar
+    progressWrapper.onclick = (e) => {
+      e.stopPropagation();
+      const rect = progressWrapper.getBoundingClientRect();
+      const pos = (e.clientX - rect.left) / rect.width;
+      if (video.duration) {
+        video.currentTime = pos * video.duration;
+      }
+    };
+
+    // Auto-ocultar controles tras 3 segundos de inactividad del cursor o toque
+    function resetControlsTimer() {
+      controlsOverlay.classList.remove('hidden');
+      if (video.paused) return; // Si está pausado, se mantienen visibles
+
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => {
+        controlsOverlay.classList.add('hidden');
+      }, 3000);
+    }
+
+    videoBox.addEventListener('mousemove', resetControlsTimer);
+    videoBox.addEventListener('touchstart', resetControlsTimer);
+
+    // Toggle de Pantalla Completa
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        videoBox.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    // TECLA DE ATRÁS Y CONTROLES DE TELEVISOR / TECLADO
+    window.addEventListener('keydown', (e) => {
+      // Tecla atrás en Smart TV (10009 / Backspace / Escape)
+      if (e.key === 'Escape' || e.key === 'Backspace' || e.keyCode === 10009) {
+        if (document.fullscreenElement) {
+          e.preventDefault();
+          document.exitFullscreen();
+        }
+        // Si no está en pantalla completa, permite el comportamiento por defecto (regresar en la web)
+      }
+      // Botón Play / Pausa del teclado o control TV (Espacio / Enter)
+      if (e.key === ' ' || e.key === 'MediaPlayPause') {
+        e.preventDefault();
+        togglePlay();
+      }
+    });
+
+    // EVENTOS DE BOTONES
+    centerPlayBtn.onclick = (e) => { e.stopPropagation(); togglePlay(); };
+    miniPlayBtn.onclick = (e) => { e.stopPropagation(); togglePlay(); };
+    fullscreenBtn.onclick = (e) => { e.stopPropagation(); toggleFullscreen(); };
+    video.onclick = () => togglePlay();
+
+    // Toggle de desplegables
+    btnSeries.onclick = (e) => {
+      e.stopPropagation();
+      menuEpisodes.classList.remove('show');
+      menuSeries.classList.toggle('show');
+    };
+    btnEpisodes.onclick = (e) => {
+      e.stopPropagation();
+      menuSeries.classList.remove('show');
+      menuEpisodes.classList.toggle('show');
+    };
+    document.onclick = () => {
+      menuSeries.classList.remove('show');
+      menuEpisodes.classList.remove('show');
+    };
+
+    // INICIALIZACIÓN AL CARGAR LA PÁGINA
+    window.onload = () => {
+      deviceBadge.innerText = `Dispositivo: ${detectDevice()}`;
+      fetchGitHubCatalog();
+      resetControlsTimer();
+    };
+  </script>
 </body>
 </html>
