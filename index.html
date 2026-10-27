@@ -171,7 +171,6 @@
       transform: translate(-50%, -50%) scale(1.08);
       background-color: #eeeeee;
     }
-    /* Icono del triángulo blanco dentro o negro en contraste */
     .play-icon-shape {
       width: 0;
       height: 0;
@@ -219,7 +218,7 @@
       transition: width 0.1s linear;
     }
 
-    /* CONTROLES ABAJO (PLAY PEQUEÑO, TIEMPO, PANTALLA COMPLETA) */
+    /* CONTROLES ABAJO */
     .bottom-controls-row {
       display: flex;
       justify-content: space-between;
@@ -249,8 +248,6 @@
       font-family: monospace;
       color: #cccccc;
     }
-
-    /* MENSAJE DE ESTADO */
     .status-info {
       margin-top: 10px;
       font-size: 0.85rem;
@@ -268,7 +265,6 @@
 
   <!-- SELECTOR DE SERIES Y EPISODIOS -->
   <div class="selector-container">
-    <!-- Dropdown Serie -->
     <div class="dropdown-group">
       <button class="btn-dropdown" id="btnSeries">
         <span id="labelSerie">Cargando series...</span> ▼
@@ -276,7 +272,6 @@
       <div class="dropdown-menu" id="menuSeries"></div>
     </div>
 
-    <!-- Dropdown Episodio -->
     <div class="dropdown-group">
       <button class="btn-dropdown" id="btnEpisodes">
         <span id="labelEpisode">Selecciona episodios...</span> ▼
@@ -288,17 +283,15 @@
   <!-- REPRODUCTOR MP4 -->
   <div class="player-wrapper">
     <div class="video-box" id="videoBox">
-      <!-- Video HTML5 sin controles nativos para usar los personalizados -->
       <video id="mainVideo" preload="metadata"></video>
 
-      <!-- Botón Central Blanco/Negro (Estilo JK Anime) -->
+      <!-- Botón Central Blanco/Negro -->
       <div class="center-play-btn" id="centerPlayBtn">
         <div class="play-icon-shape" id="centerIcon"></div>
       </div>
 
-      <!-- Barra de controles personalizada -->
+      <!-- Controles -->
       <div class="controls-overlay" id="controlsOverlay">
-        <!-- Barra de tiempo que responde al clic/toque -->
         <div class="progress-bar-wrapper" id="progressWrapper">
           <div class="progress-bar-fill" id="progressFill"></div>
         </div>
@@ -314,25 +307,21 @@
         </div>
       </div>
     </div>
-    <div class="status-info" id="statusInfo">Conectando a GitHub Repository...</div>
+    <div class="status-info" id="statusInfo">Escaneando repositorio...</div>
   </div>
 
   <script>
-    // CONFIGURACIÓN DE REPOSiTORIO GITHUB
     const GITHUB_USER = "Akirosaybye";
     const GITHUB_REPO = "WatchWithoutads";
 
-    // ESTADO DE LA APLICACIÓN
     let catalog = [];
     let currentSerieIndex = 0;
     let currentEpisodeIndex = 0;
     let hideTimer = null;
 
-    // ELEMENTOS DOM
     const video = document.getElementById('mainVideo');
     const videoBox = document.getElementById('videoBox');
     const centerPlayBtn = document.getElementById('centerPlayBtn');
-    const centerIcon = document.getElementById('centerIcon');
     const miniPlayBtn = document.getElementById('miniPlayBtn');
     const controlsOverlay = document.getElementById('controlsOverlay');
     const progressWrapper = document.getElementById('progressWrapper');
@@ -350,30 +339,23 @@
     const menuEpisodes = document.getElementById('menuEpisodes');
     const labelEpisode = document.getElementById('labelEpisode');
 
-    // 1. DETECTOR DE DISPOSITIVOS (Móvil, TV, PC/Laptop de respaldo)
     function detectDevice() {
       try {
         const ua = navigator.userAgent.toLowerCase();
-        if (/smart-tv|smarttv|googletv|appletv|hbbtv|pov_tv|netcast|webos/.test(ua)) {
-          return "Smart TV";
-        }
-        if (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/.test(ua)) {
-          return "Móvil / Tablet";
-        }
+        if (/smart-tv|smarttv|googletv|appletv|hbbtv|pov_tv|netcast|webos/.test(ua)) return "Smart TV";
+        if (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/.test(ua)) return "Móvil / Tablet";
         return "PC / Laptop";
       } catch (e) {
-        return "PC / Laptop"; // Interfaz por defecto ante cualquier falla
+        return "PC / Laptop";
       }
     }
 
-    // 2. ESCÁNER AUTOMÁTICO DE ARCHIVOS EN GITHUB (Carpetas = Series, MP4 = Capítulos)
     async function fetchGitHubCatalog() {
       try {
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents`);
-        if (!response.ok) throw new Error("Respuesta no OK de GitHub API");
+        if (!response.ok) throw new Error("Error API GitHub");
         const rootItems = await response.json();
 
-        // Filtra únicamente las carpetas del repositorio para tomarlas como series
         const folders = rootItems.filter(item => item.type === "dir");
         let loadedCatalog = [];
 
@@ -381,7 +363,6 @@
           const folderRes = await fetch(folder.url);
           if (folderRes.ok) {
             const files = await folderRes.json();
-            // Filtra solo los archivos .mp4
             const mp4Files = files.filter(f => f.name.toLowerCase().endsWith('.mp4'));
             
             if (mp4Files.length > 0) {
@@ -389,7 +370,8 @@
                 name: folder.name,
                 episodes: mp4Files.map(file => ({
                   title: file.name,
-                  url: file.download_url
+                  // Construimos la ruta directamente basada en la estructura de carpetas local del repositorio
+                  url: `./${folder.name}/${file.name}`
                 }))
               });
             }
@@ -398,26 +380,25 @@
 
         if (loadedCatalog.length > 0) {
           catalog = loadedCatalog;
-          statusInfo.innerText = "Catálogo escaneado exitosamente desde GitHub.";
+          statusInfo.innerText = "Catálogo cargado correctamente.";
         } else {
-          useFallbackCatalog("No se encontraron carpetas con videos .mp4 en GitHub.");
+          useFallbackCatalog("No se hallaron videos en carpetas.");
         }
       } catch (err) {
-        useFallbackCatalog("Usando estructura de catálogo por defecto.");
+        useFallbackCatalog("Usando catálogo de respaldo.");
       }
       renderDropdowns();
       loadCurrentEpisode();
     }
 
-    // Catálogo de respaldo directo para evitar cualquier fallo
     function useFallbackCatalog(msg) {
       statusInfo.innerText = msg;
       catalog = [
         {
-          name: "Clannad: After Story test",
+          name: "clannad",
           episodes: [
             {
-              title: "Clannad t2c5.mp4",
+              title: "clannadt2c5.mp4",
               url: "./clannad/clannadt2c5.mp4"
             }
           ]
@@ -425,11 +406,9 @@
       ];
     }
 
-    // 3. RENDERIZADO DE MENÚS DESPLEGABLES DE SERIES Y EPISODIOS
     function renderDropdowns() {
       if (!catalog.length) return;
 
-      // Renderizar Series
       menuSeries.innerHTML = "";
       catalog.forEach((serie, idx) => {
         const item = document.createElement('div');
@@ -448,7 +427,6 @@
 
       labelSerie.innerText = catalog[currentSerieIndex].name;
 
-      // Renderizar Episodios de la Serie Seleccionada
       menuEpisodes.innerHTML = "";
       const episodes = catalog[currentSerieIndex].episodes;
       episodes.forEach((ep, idx) => {
@@ -468,7 +446,6 @@
       labelEpisode.innerText = episodes[currentEpisodeIndex] ? episodes[currentEpisodeIndex].title : "Sin episodios";
     }
 
-    // Cargar el episodio en el reproductor MP4
     function loadCurrentEpisode() {
       const ep = catalog[currentSerieIndex]?.episodes[currentEpisodeIndex];
       if (ep) {
@@ -478,10 +455,9 @@
       }
     }
 
-    // 4. CONTROL DE REPRODUCCIÓN Y EVENTOS
     function togglePlay() {
       if (video.paused) {
-        video.play();
+        video.play().catch(() => {});
         updatePlayStateUI(true);
       } else {
         video.pause();
@@ -501,7 +477,6 @@
       }
     }
 
-    // Actualizar la barra de progreso y el tiempo (Formato HH:MM:SS)
     function formatTime(sec) {
       if (isNaN(sec)) return "00:00";
       const h = Math.floor(sec / 3600);
@@ -520,7 +495,6 @@
       }
     };
 
-    // Barra de tiempo interactiva: lleva exacto al minuto, segundo y hora al presionar
     progressWrapper.onclick = (e) => {
       e.stopPropagation();
       const rect = progressWrapper.getBoundingClientRect();
@@ -530,11 +504,9 @@
       }
     };
 
-    // Auto-ocultar controles tras 3 segundos de inactividad del cursor o toque
     function resetControlsTimer() {
       controlsOverlay.classList.remove('hidden');
-      if (video.paused) return; // Si está pausado, se mantienen visibles
-
+      if (video.paused) return;
       clearTimeout(hideTimer);
       hideTimer = setTimeout(() => {
         controlsOverlay.classList.add('hidden');
@@ -544,7 +516,6 @@
     videoBox.addEventListener('mousemove', resetControlsTimer);
     videoBox.addEventListener('touchstart', resetControlsTimer);
 
-    // Toggle de Pantalla Completa
     function toggleFullscreen() {
       if (!document.fullscreenElement) {
         videoBox.requestFullscreen().catch(() => {});
@@ -553,30 +524,24 @@
       }
     }
 
-    // TECLA DE ATRÁS Y CONTROLES DE TELEVISOR / TECLADO
     window.addEventListener('keydown', (e) => {
-      // Tecla atrás en Smart TV (10009 / Backspace / Escape)
       if (e.key === 'Escape' || e.key === 'Backspace' || e.keyCode === 10009) {
         if (document.fullscreenElement) {
           e.preventDefault();
           document.exitFullscreen();
         }
-        // Si no está en pantalla completa, permite el comportamiento por defecto (regresar en la web)
       }
-      // Botón Play / Pausa del teclado o control TV (Espacio / Enter)
       if (e.key === ' ' || e.key === 'MediaPlayPause') {
         e.preventDefault();
         togglePlay();
       }
     });
 
-    // EVENTOS DE BOTONES
     centerPlayBtn.onclick = (e) => { e.stopPropagation(); togglePlay(); };
     miniPlayBtn.onclick = (e) => { e.stopPropagation(); togglePlay(); };
     fullscreenBtn.onclick = (e) => { e.stopPropagation(); toggleFullscreen(); };
     video.onclick = () => togglePlay();
 
-    // Toggle de desplegables
     btnSeries.onclick = (e) => {
       e.stopPropagation();
       menuEpisodes.classList.remove('show');
@@ -592,7 +557,6 @@
       menuEpisodes.classList.remove('show');
     };
 
-    // INICIALIZACIÓN AL CARGAR LA PÁGINA
     window.onload = () => {
       deviceBadge.innerText = `Dispositivo: ${detectDevice()}`;
       fetchGitHubCatalog();
