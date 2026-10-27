@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es" class="bg-black text-white">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reproductor MP4 - Alto Contraste</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        /* Custom scrollbar for high contrast dropdowns */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111111;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ffffff;
+            border-radius: 3px;
+        }
+        /* Progress bar custom styling */
+        input[type="range"] {
+            accent-color: #ffffff;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-white selection:text-black">
+
+    <!-- Header / Top Bar: Series & Episode Selectors + Device Indicator -->
+    <header class="w-full p-4 md:px-8 border-b border-zinc-800 flex flex-wrap items-center justify-between gap-4 relative z-50 bg-black/90 backdrop-blur">
+        <div class="flex items-center gap-3">
+            <h1 class="text-xl font-bold tracking-wider uppercase border-l-4 border-white pl-3">Anime Player</h1>
+            
+            <!-- Series Dropdown Container -->
+            <div class="relative">
+                <button id="seriesBtn" class="bg-zinc-900 border border-zinc-700 hover:border-white text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 focus:outline-none">
+                    <span id="currentSeriesName">Clannad: After Story test</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div id="seriesDropdown" class="hidden absolute left-0 mt-2 w-64 bg-zinc-950 border border-zinc-800 rounded-lg shadow-2xl py-2 z-50">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Episodes Dropdown Container -->
+            <div class="relative">
+                <button id="episodeBtn" class="bg-zinc-900 border border-zinc-700 hover:border-white text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 focus:outline-none">
+                    <span id="currentEpisodeName">Clannad t2c5.mp4</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div id="episodeDropdown" class="hidden absolute left-0 mt-2 w-64 bg-zinc-950 border border-zinc-800 rounded-lg shadow-2xl py-2 z-50">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Device Detector Indicator -->
+        <div class="flex items-center gap-2 bg-zinc-900/80 border border-zinc-800 px-3 py-1.5 rounded-full text-xs font-mono text-zinc-300">
+            <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+            Dispositivo: <span id="deviceIndicator" class="font-bold text-white">Detectando...</span>
+        </div>
+    </header>
+
+    <!-- Main Content: Center Video Player -->
+    <main class="flex-grow flex items-center justify-center p-2 sm:p-6">
+        <div id="videoContainerWrapper" class="relative w-full max-w-5xl aspect-video bg-black rounded-xl overflow-hidden border border-zinc-800 shadow-2xl group flex items-center justify-center">
+            
+            <!-- MP4 Video Element -->
+            <video id="mainVideo" class="w-full h-full object-contain bg-black" playsinline>
+                <!-- Fallback video to ensure immediate testing capability -->
+                <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
+                Tu navegador no soporta la reproducción de video HTML5.
+            </video>
+
+            <!-- Center Play/Pause Button (JK Anime inspired high-contrast monochrome design) -->
+            <button id="centerPlayBtn" class="absolute z-30 w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white text-black flex items-center justify-center shadow-2xl transition transform hover:scale-105 active:scale-95 focus:outline-none opacity-0 pointer-events-none">
+                <svg id="centerPlayIcon" class="w-10 h-10 sm:w-12 sm:h-12 translate-x-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+            </button>
+
+            <!-- Bottom Video Controls Bar -->
+            <div id="controlsContainer" class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-4 flex flex-col gap-2 z-40 transition-opacity duration-300 opacity-0 pointer-events-none">
+                
+                <!-- Interactive Progress / Seek Bar -->
+                <div id="progressContainer" class="w-full h-3 bg-zinc-800 rounded-full cursor-pointer relative flex items-center group/progress">
+                    <div id="progressBar" class="h-full bg-white rounded-full relative w-0">
+                        <div class="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full shadow scale-0 group-hover/progress:scale-100 transition-transform"></div>
+                    </div>
+                </div>
+
+                <!-- Control Buttons and Time Info -->
+                <div class="flex items-center justify-between text-white text-sm">
+                    <!-- Left: Play/Pause Toggle -->
+                    <div class="flex items-center gap-4">
+                        <button id="bottomPlayBtn" class="hover:text-zinc-300 transition focus:outline-none">
+                            <svg id="bottomPlayIcon" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                            </svg>
+                        </button>
+                        <!-- Current Time / Total Duration -->
+                        <div id="timeDisplay" class="font-mono text-xs sm:text-sm text-zinc-300">
+                            0:00 / 0:00
+                        </div>
+                    </div>
+
+                    <!-- Right: Fullscreen Toggle -->
+                    <div class="flex items-center gap-3">
+                        <button id="fullscreenBtn" class="hover:text-zinc-300 transition focus:outline-none p-1">
+                            <svg id="fullscreenIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full py-4 text-center text-xs text-zinc-500 border-t border-zinc-900">
+        Reproductor de Video HTML5 optimizado para Alta Gama (Smart TV, PC, Móvil) - Estilo Alto Contraste.
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // 1. Dataset for Series and Episodes
+        const seriesData = [
+            {
+                id: 'clannad',
+                name: 'Clannad: After Story test',
+                episodes: [
+                    { title: 'Clannad t2c5.mp4', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' },
+                    { title: 'Clannad t2c6_extra.mp4', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4' }
+                ]
+            },
+            {
+                id: 'shingeki',
+                name: 'Shingeki no Kyojin Test',
+                episodes: [
+                    { title: 'Capitulo 01.mp4', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
+                    { title: 'Capitulo 02.mp4', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4' }
+                ]
+            }
+        ];
+
+        let currentSeriesIndex = 0;
+        let currentEpisodeIndex = 0;
+
+        // 2. Device Detection with PC Fallback
+        function detectDevice() {
+            try {
+                const ua = navigator.userAgent || navigator.vendor || window.opera;
+                let detected = 'PC / Laptop';
+
+                if (/smart-tv|smarttv|googletv|appletv|hbbtv|netcast|webos|samsung|tizen/i.test(ua)) {
+                    detected = 'Smart TV';
+                } else if (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua)) {
+                    detected = 'Móvil';
+                }
+                document.getElementById('deviceIndicator').textContent = detected;
+            } catch (err) {
+                console.warn('Error detectando dispositivo, usando PC por defecto:', err);
+                document.getElementById('deviceIndicator').textContent = 'PC / Laptop';
+            }
+        }
+        detectDevice();
+
+        // 3. Elements References
+        const video = document.getElementById('mainVideo');
+        const videoContainerWrapper = document.getElementById('videoContainerWrapper');
+        const centerPlayBtn = document.getElementById('centerPlayBtn');
+        const centerPlayIcon = document.getElementById('centerPlayIcon');
+        const bottomPlayBtn = document.getElementById('bottomPlayBtn');
+        const bottomPlayIcon = document.getElementById('bottomPlayIcon');
+        const controlsContainer = document.getElementById('controlsContainer');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+        const seriesBtn = document.getElementById('seriesBtn');
+        const currentSeriesName = document.getElementById('currentSeriesName');
+        const seriesDropdown = document.getElementById('seriesDropdown');
+        const episodeBtn = document.getElementById('episodeBtn');
+        const currentEpisodeName = document.getElementById('currentEpisodeName');
+        const episodeDropdown = document.getElementById('episodeDropdown');
+
+        // Force fixed base sound level (audio is managed by device volume hardware)
+        video.volume = 1.0;
+
+        // 4. Render Dropdowns
+        function renderSeriesDropdown() {
+            seriesDropdown.innerHTML = seriesData.map((s, idx) => `
+                <button onclick="selectSeries(${idx})" class="w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-800 transition ${idx === currentSeriesIndex ? 'text-white font-bold bg-zinc-900' : 'text-zinc-400'}">
+                    ${s.name}
+                </button>
+            `).join('');
+        }
+
+        function renderEpisodeDropdown() {
+            const episodes = seriesData[currentSeriesIndex].episodes;
+            episodeDropdown.innerHTML = episodes.map((ep, idx) => `
+                <button onclick="selectEpisode(${idx})" class="w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-800 transition ${idx === currentEpisodeIndex ? 'text-white font-bold bg-zinc-900' : 'text-zinc-400'}">
+                    ${ep.title}
+                </button>
+            `).join('');
+        }
+
+        renderSeriesDropdown();
+        renderEpisodeDropdown();
+
+        // Toggle Dropdown Visibility
+        seriesBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            seriesDropdown.classList.toggle('hidden');
+            episodeDropdown.classList.add('hidden');
+        });
+
+        episodeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            episodeDropdown.classList.toggle('hidden');
+            seriesDropdown.classList.add('hidden');
+        });
+
+        document.addEventListener('click', () => {
+            seriesDropdown.classList.add('hidden');
+            episodeDropdown.classList.add('hidden');
+        });
+
+        window.selectSeries = function(idx) {
+            currentSeriesIndex = idx;
+            currentEpisodeIndex = 0;
+            currentSeriesName.textContent = seriesData[idx].name;
+            renderSeriesDropdown();
+            renderEpisodeDropdown();
+            loadCurrentEpisode();
+            seriesDropdown.classList.add('hidden');
+        };
+
+        window.selectEpisode = function(idx) {
+            currentEpisodeIndex = idx;
+            currentEpisodeName.textContent = seriesData[currentSeriesIndex].episodes[idx].title;
+            renderEpisodeDropdown();
+            loadCurrentEpisode();
+            episodeDropdown.classList.add('hidden');
+        };
+
+        function loadCurrentEpisode() {
+            const ep = seriesData[currentSeriesIndex].episodes[currentEpisodeIndex];
+            currentEpisodeName.textContent = ep.title;
+            video.src = ep.url;
+            video.load();
+            video.play().catch(e => console.log("Autoplay blocked or waiting for user interaction:", e));
+        }
+
+        // 5. Play / Pause Handling
+        function togglePlay() {
+            if (video.paused) {
+                video.play();
+            } else {
+                video.pause();
+            }
+        }
+
+        centerPlayBtn.addEventListener('click', togglePlay);
+        bottomPlayBtn.addEventListener('click', togglePlay);
+        video.addEventListener('click', togglePlay);
+
+        video.addEventListener('play', () => {
+            centerPlayIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; // Pause icon
+            bottomPlayIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+        });
+
+        video.addEventListener('pause', () => {
+            centerPlayIcon.innerHTML = '<path d="M8 5v14l11-7z"/>'; // Play icon
+            bottomPlayIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+            showControlsForce(); // Keep controls visible when paused
+        });
+
+        // 6. Format Time Helper
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "0:00";
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            const h = Math.floor(m / 60);
+            const mins = m % 60;
+            if (h > 0) {
+                return `${h}:${mins < 10 ? '0' : ''}${mins}:${s < 10 ? '0' : ''}${s}`;
+            }
+            return `${mins}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        // Update progress bar and time display automatically per file duration
+        video.addEventListener('timeupdate', () => {
+            if (!video.duration) return;
+            const percent = (video.currentTime / video.duration) * 100;
+            progressBar.style.width = `${percent}%`;
+            timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
+        });
+
+        // Click / Touch interactive scrubbing on progress bar
+        progressContainer.addEventListener('click', (e) => {
+            const rect = progressContainer.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            if (video.duration) {
+                video.currentTime = pos * video.duration;
+            }
+        });
+
+        // 7. Auto-hide controls (3 seconds timer with reset on movement / touch)
+        let hideTimeout;
+        function showControlsForce() {
+            controlsContainer.classList.remove('opacity-0', 'pointer-events-none');
+            centerPlayBtn.classList.remove('opacity-0', 'pointer-events-none');
+            clearTimeout(hideTimeout);
+            
+            if (!video.paused) {
+                hideTimeout = setTimeout(() => {
+                    if (!video.paused) {
+                        controlsContainer.classList.add('opacity-0', 'pointer-events-none');
+                        centerPlayBtn.classList.add('opacity-0', 'pointer-events-none');
+                    }
+                }, 3000);
+            }
+        }
+
+        videoContainerWrapper.addEventListener('mousemove', showControlsForce);
+        videoContainerWrapper.addEventListener('touchstart', showControlsForce);
+        videoContainerWrapper.addEventListener('click', showControlsForce);
+
+        // 8. Smart TV & Keyboard Controls
+        document.addEventListener('keydown', (e) => {
+            // Space bar or Enter or Media keys for play/pause
+            if (e.code === 'Space' || e.key === ' ' || e.key === 'Enter' || e.key === 'MediaPlayPause' || e.keyCode === 179 || e.keyCode === 32) {
+                if (document.activeElement.tagName !== 'BUTTON') {
+                    e.preventDefault();
+                    togglePlay();
+                    showControlsForce();
+                }
+            }
+            // Escape or Back button for fullscreen exit
+            if (e.key === 'Escape' || e.keyCode === 27 || e.key === 'GoBack' || e.keyCode === 461) {
+                if (document.fullscreenElement) {
+                    e.preventDefault();
+                    document.exitFullscreen();
+                }
+            }
+        });
+
+        // 9. Fullscreen Toggle Logic
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                videoContainerWrapper.requestFullscreen().catch(err => {
+                    console.error("Error al intentar activar pantalla completa:", err);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        // 10. Browser Back Button handling
+        history.pushState(null, '', window.location.href);
+        window.addEventListener('popstate', (e) => {
+            if (document.fullscreenElement) {
+                e.preventDefault();
+                document.exitFullscreen();
+                history.pushState(null, '', window.location.href);
+            }
+        });
+    </script>
+</body>
+</html>
