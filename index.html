@@ -283,9 +283,9 @@
   <!-- REPRODUCTOR MP4 -->
   <div class="player-wrapper">
     <div class="video-box" id="videoBox">
-      <video id="mainVideo" preload="metadata"></video>
+      <video id="mainVideo" preload="metadata" playsinline></video>
 
-      <!-- Botón Central Blanco/Negro -->
+      <!-- Botón Central Blanco/Negro (Estilo JK Anime) -->
       <div class="center-play-btn" id="centerPlayBtn">
         <div class="play-icon-shape" id="centerIcon"></div>
       </div>
@@ -370,8 +370,9 @@
                 name: folder.name,
                 episodes: mp4Files.map(file => ({
                   title: file.name,
-                  // Construimos la ruta directamente basada en la estructura de carpetas local del repositorio
-                  url: `./${folder.name}/${file.name}`
+                  // URL principal desde API y fallback a la ruta local
+                  url: file.download_url || `./${encodeURIComponent(folder.name)}/${encodeURIComponent(file.name)}`,
+                  fallbackUrl: `./${folder.name}/${file.name}`
                 }))
               });
             }
@@ -380,9 +381,9 @@
 
         if (loadedCatalog.length > 0) {
           catalog = loadedCatalog;
-          statusInfo.innerText = "Catálogo cargado correctamente.";
+          statusInfo.innerText = "Catálogo cargado correctamente desde GitHub.";
         } else {
-          useFallbackCatalog("No se hallaron videos en carpetas.");
+          useFallbackCatalog("No se hallaron carpetas con archivos .mp4.");
         }
       } catch (err) {
         useFallbackCatalog("Usando catálogo de respaldo.");
@@ -399,7 +400,8 @@
           episodes: [
             {
               title: "clannadt2c5.mp4",
-              url: "./clannad/clannadt2c5.mp4"
+              url: "./clannad/clannadt2c5.mp4",
+              fallbackUrl: "./clannad/clannadt2c5.mp4"
             }
           ]
         }
@@ -450,6 +452,13 @@
       const ep = catalog[currentSerieIndex]?.episodes[currentEpisodeIndex];
       if (ep) {
         video.src = ep.url;
+        video.onerror = () => {
+          // Si la primera URL falla, intenta la ruta fallback
+          if (video.src !== ep.fallbackUrl) {
+            video.src = ep.fallbackUrl;
+            video.load();
+          }
+        };
         video.load();
         updatePlayStateUI(false);
       }
@@ -493,6 +502,10 @@
         progressFill.style.width = `${pct}%`;
         timeDisplay.innerText = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
       }
+    };
+
+    video.onloadedmetadata = () => {
+      timeDisplay.innerText = `00:00 / ${formatTime(video.duration)}`;
     };
 
     progressWrapper.onclick = (e) => {
