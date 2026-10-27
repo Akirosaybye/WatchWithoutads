@@ -366,13 +366,16 @@
             const mp4Files = files.filter(f => f.name.toLowerCase().endsWith('.mp4'));
             
             if (mp4Files.length > 0) {
+              let branch = "main";
+              try { branch = new URL(folder.url).searchParams.get('ref') || "main"; } catch (e) {}
+
+              mp4Files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
               loadedCatalog.push({
                 name: folder.name,
                 episodes: mp4Files.map(file => ({
                   title: file.name,
-                  // URL principal desde API y fallback a la ruta local
-                  url: file.download_url || `./${encodeURIComponent(folder.name)}/${encodeURIComponent(file.name)}`,
-                  fallbackUrl: `./${folder.name}/${file.name}`
+                  sources: buildSources(folder.name, file.name, branch, file.download_url)
                 }))
               });
             }
@@ -392,6 +395,20 @@
       loadCurrentEpisode();
     }
 
+    // Lista de URLs a probar en orden hasta que una reproduzca.
+    // 1) Ruta relativa en GitHub Pages (mismo origen: MIME correcto y soporte de rangos/seek)
+    // 2) download_url de la API (raw.githubusercontent.com)
+    // 3) media.githubusercontent.com (archivos subidos con Git LFS)
+    // 4) jsDelivr (CDN con MIME correcto y soporte de rangos)
+    function buildSources(folderName, fileName, branch, downloadUrl) {
+      const path = `${encodeURIComponent(folderName)}/${encodeURIComponent(fileName)}`;
+      const list = [`./${path}`];
+      if (downloadUrl) list.push(downloadUrl);
+      list.push(`https://media.githubusercontent.com/media/${GITHUB_USER}/${GITHUB_REPO}/${branch}/${path}`);
+      list.push(`https://cdn.jsdelivr.net/gh/${GITHUB_USER}/${GITHUB_REPO}@${branch}/${path}`);
+      return list;
+    }
+
     function useFallbackCatalog(msg) {
       statusInfo.innerText = msg;
       catalog = [
@@ -400,8 +417,7 @@
           episodes: [
             {
               title: "clannadt2c5.mp4",
-              url: "./clannad/clannadt2c5.mp4",
-              fallbackUrl: "./clannad/clannadt2c5.mp4"
+              sources: buildSources("clannad", "clannadt2c5.mp4", "main", null)
             }
           ]
         }
@@ -448,31 +464,60 @@
       labelEpisode.innerText = episodes[currentEpisodeIndex] ? episodes[currentEpisodeIndex].title : "Sin episodios";
     }
 
+    let loadToken = 0;
+
     function loadCurrentEpisode() {
       const ep = catalog[currentSerieIndex]?.episodes[currentEpisodeIndex];
-      if (ep) {
-        video.src = ep.url;
-        video.onerror = () => {
-          // Si la primera URL falla, intenta la ruta fallback
-          if (video.src !== ep.fallbackUrl) {
-            video.src = ep.fallbackUrl;
-            video.load();
-          }
-        };
+      if (!ep) return;
+
+      const token = ++loadToken;
+      let attempt = 0;
+
+      video.pause();
+      progressFill.style.width = '0%';
+      timeDisplay.innerText = '00:00 / 00:00';
+      updatePlayStateUI(false);
+
+      const tryNextSource = () => {
+        if (token !== loadToken) return;
+        if (attempt >= ep.sources.length) {
+          const code = video.error ? video.error.code : '?';
+          statusInfo.innerText = `No se pudo reproducir el video (error ${code}). Verifica que el .mp4 esté en H.264 + AAC y que se haya subido completo.`;
+          return;
+        }
+        video.src = ep.sources[attempt++];
         video.load();
-        updatePlayStateUI(false);
-      }
+      };
+
+      video.onerror = () => tryNextSource();
+      tryNextSource();
     }
 
     function togglePlay() {
       if (video.paused) {
-        video.play().catch(() => {});
-        updatePlayStateUI(true);
+        const p = video.play();
+        if (p && p.catch) p.catch(() => {});
       } else {
         video.pause();
-        updatePlayStateUI(false);
       }
     }
+
+    // El estado visual sigue al estado REAL del video
+    video.addEventListener('play', () => updatePlayStateUI(true));
+    video.addEventListener('playing', () => updatePlayStateUI(true));
+    video.addEventListener('pause', () => {
+      updatePlayStateUI(false);
+      controlsOverlay.classList.remove('hidden');
+    });
+    video.addEventListener('ended', () => {
+      updatePlayStateUI(false);
+      controlsOverlay.classList.remove('hidden');
+    });
+    video.addEventListener('durationchange', () => {
+      if (video.duration && isFinite(video.duration)) {
+        timeDisplay.innerText = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
+      }
+    });
 
     function updatePlayStateUI(isPlaying) {
       if (isPlaying) {
